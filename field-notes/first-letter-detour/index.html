@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>The first-letter detour | Winson’s game notebook</title>
+<style>body{font:18px/1.5 system-ui,sans-serif;max-width:38rem;margin:3rem auto;padding:0 1.2rem;color:#202e36;background:#fffdf6}h1{font:2.5rem/1.1 Georgia,serif}h2{font:1.45rem Georgia,serif}article{padding:1.25rem;border:2px solid #385c65;border-radius:.4rem;background:white}button{font:inherit;padding:.45rem .7rem;cursor:pointer}details{margin:.8rem 0}a{color:#145961}#state{font-size:.86rem}footer{margin-top:2rem}</style>
+<main><h1>The first-letter detour</h1><p>A solo warm-up for category games. Name the first answer that comes to mind. Cross out its initial, then find a second answer in the same category that starts with a different letter.</p>
+<article><p id="state" aria-live="polite">Card 1 of 6</p><h2 id="category">Something that tells time</h2><p id="clue">If “clock” comes first, take C off the table. Where else might you look for the time?</p>
+<details id="example"><summary>See one possible detour</summary><p id="answer">Sundial. Thinking about a shadow instead of a clock face gets you to S.</p></details>
+<button type="button" id="next" hidden>Next card</button></article>
+<h2>Make your own card</h2><p>Pick a category that fits both answers. “Things on a desk” may exclude a sundial, while “something that tells time” includes both a sundial and a clock. Write your starting answer on one side of a card and the different-initial answer on the back. If both depend on the same mental picture, try changing the place or the material.</p>
+<p>One point on paper for a valid second answer. Ignore popularity scores for this exercise. For a timed round with rare-answer scoring, play <a href="https://streakdle.com/">Streakdle’s Krillion Unlimited</a>. I make Streakdle and wrote this separate practice deck.</p></main>
+<script>
+const cards = [
+  ["Something that tells time","If “clock” comes first, take C off the table. Where else might you look for the time?","Sundial. Thinking about a shadow instead of a clock face gets you to S."],
+  ["An instrument with strings","If “guitar” comes first, skip G. Think about how a string could be played without strumming it.","Violin. A bow rather than a pick gives you V."],
+  ["A food preserved by drying","If “raisin” comes first, skip R. Leave the fruit aisle in your imagination.","Jerky. Moving from fruit to meat gives you J."],
+  ["Something that makes a mark on paper","If “pencil” comes first, skip P. Picture putting an address on an envelope in an office.","Stamp. One press makes a whole mark at once."],
+  ["A way to cross a river","If “bridge” comes first, skip B. Consider an object that moves with the traveler.","Ferry. Look for a vessel instead of a fixed crossing."],
+  ["An animal that builds a structure","If “beaver” comes first, skip B. Trade a riverbank for a garden.","Spider. Its web fills the role of the structure."]
+];
+let index = 0;
+const next = document.querySelector("#next");
+next.hidden = false;
+next.addEventListener("click", () => {
+  index = (index + 1) % cards.length;
+  const [category,clue,answer] = cards[index];
+  document.querySelector("#state").textContent = "Card " + (index + 1) + " of " + cards.length;
+  document.querySelector("#category").textContent = category;
+  document.querySelector("#clue").textContent = clue;
+  document.querySelector("#answer").textContent = answer;
+  document.querySelector("#example").open = false;
+  next.textContent = index === cards.length - 1 ? "Start again" : "Next card";
+});
+</script></html>
