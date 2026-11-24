@@ -44,8 +44,10 @@ const status = el('status');
 const takes = [el('takeA'), el('takeB')];
 const objectUrls = [null, null];
 let current = null;
+let frame = 0;
 
 function stop() {
+  cancelAnimationFrame(frame);
   current = null;
   for (const take of takes) take.pause();
 }
@@ -69,13 +71,20 @@ for (const [index, suffix] of ['A','B'].entries()) {
     if (take.getAttribute('src')) status.textContent = 'Take '+suffix+' could not be decoded. Try WAV or MP3.';
   });
   take.addEventListener('play', () => takes[1-index].pause());
-  if (index === 0) el('stop').addEventListener('click', () => {stop(); status.textContent = 'Stopped.';});
-  take.addEventListener('timeupdate', () => {
-    if (current?.take === take && take.currentTime >= current.end) {
+  take.addEventListener('pause', () => {
+    if (current?.take === take && take.paused) {
       stop();
-      status.textContent = 'Finished '+suffix+' window.';
+      status.textContent = 'Paused take '+suffix+'.';
     }
   });
+  if (index === 0) el('stop').addEventListener('click', () => {stop(); status.textContent = 'Stopped.';});
+  function finishWindow() {
+    if (current?.take !== take || take.currentTime < current.end) return false;
+    stop();
+    status.textContent = 'Finished '+suffix+' window.';
+    return true;
+  }
+  take.addEventListener('timeupdate', finishWindow);
   el('play'+suffix).addEventListener('click', async () => {
     const start = el('start').valueAsNumber, end = el('end').valueAsNumber;
     if (!Number.isFinite(take.duration) || !Number.isFinite(start) || !Number.isFinite(end) ||
@@ -88,7 +97,13 @@ for (const [index, suffix] of ['A','B'].entries()) {
     current = run;
     take.currentTime = start;
     status.textContent = 'Playing '+suffix+' from '+start+' to '+end+' seconds.';
-    try { await take.play(); }
+    try {
+      await take.play();
+      function watch() {
+        if (current === run && !finishWindow()) frame = requestAnimationFrame(watch);
+      }
+      watch();
+    }
     catch {
       if(current === run) {
         current = null;
