@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>An image wipe for already-aligned exports</title>
+<style>
+  *{box-sizing:border-box}
+  body{font:1rem/1.55 system-ui,sans-serif;margin:0;background:#f6f4fb;color:#211d2d}
+  main{max-width:52rem;margin:auto;padding:2rem 1.25rem 3rem}
+  h1{font-size:clamp(2rem,6vw,3.65rem);line-height:1.03;max-width:16ch;margin:.5rem 0}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,18rem),1fr));gap:.7rem}
+  .panel{background:#fff;border:1px solid #a399b7;border-radius:.7rem;padding:1rem;margin:1rem 0}
+  label{display:block} input[type=file]{width:100%;font:inherit;color:inherit}
+  input[type=range]{width:min(100%,24rem);accent-color:#594381}
+  output{font-variant-numeric:tabular-nums}
+  canvas{display:block;width:100%;height:auto;background:repeating-conic-gradient(#dedce1 0 25%,#fff 0 50%) 0 0/16px 16px}
+  a{color:#483169}
+</style>
+<main>
+<h1>An image wipe for aligned exports</h1>
+<p>Slide between two exports to catch differences around a seam, silhouette or label. Choose files with identical dimensions whose subjects were aligned before export. The comparison runs locally in this tab; it does not upload or store either file.</p>
+<div class="panel">
+<div class="grid">
+<label>Image A <input id="fileA" type="file" accept="image/png,image/webp,image/jpeg"></label>
+<label>Image B <input id="fileB" type="file" accept="image/png,image/webp,image/jpeg"></label>
+</div>
+<p id="hint" role="status">Choose two still PNG, WebP or JPEG files, or try the sample below.</p>
+<label for="split">Extent of Image A <output id="position" for="split"></output></label>
+<input id="split" type="range" min="0" max="100" value="50">
+<canvas id="view" width="640" height="360" role="img" aria-label="Image A on the left and image B on the right"></canvas>
+</div>
+<h2>Start with the example</h2>
+<p>The sample uses two fictional navy jackets. Put the divider near the cuff to see a shifted trim line, then move it through the pockets. The button and pocket are where they were in the first drawing. Contrast this with an unaligned pair, where many edges shift together.</p>
+<h2>Interpret the change</h2>
+<p>Pick one fixed landmark and check both sides there first. If an entire figure shifts, align the images in your editor before comparing details. A small display canvas can hide a few pixels of change. Open both originals at full size if the details matter.</p>
+<p>I’m Winson, the maker of the example tools below. This viewer accepts files from any editor.</p>
+<ul>
+<li>Compare two same-size PNG exports from <a href="https://emoteresize.com/">Emote Resizer</a> to catch a shifted outline after an artwork change.</li>
+<li>Compare two aligned apparel concepts from <a href="https://tryonswap.com/">TryOnSwap</a>. Check that a pattern or closure stays where the concept brief expects it.</li>
+<li>Compare two approved-size drafts from <a href="https://pawmotif.com/">PawMotif</a> if you have exported files to compare. Inspect one distinctive marking before sharing.</li>
+<li>Review alternate layouts exported at the same dimensions from <a href="https://freeimagemerger.com/">Free Image Merger</a>. Look for recycled labels or unexpected shifts at panel boundaries.</li>
+</ul>
+</main>
+<script>
+const el = id => document.getElementById(id);
+const canvas = el('view');
+const ctx = canvas.getContext('2d');
+let images = [null, null];
+let revisions = [0, 0];
+
+function demo(isB) {
+  const surface = document.createElement('canvas');
+  surface.width = 640;
+  surface.height = 360;
+  const pen = surface.getContext('2d');
+  pen.fillStyle = '#eee9df';
+  pen.fillRect(0, 0, 640, 360);
+  pen.fillStyle = '#253953';
+  pen.beginPath();
+  [[233,73],[407,73],[484,106],[546,254],[480,283],[436,177],[434,309],
+   [206,309],[204,177],[160,283],[94,254],[156,106]].forEach(([x,y], i) => i ? pen.lineTo(x,y) : pen.moveTo(x,y));
+  pen.closePath();
+  pen.fill();
+  pen.strokeStyle = '#dfb783';
+  pen.lineWidth = 5;
+  pen.strokeRect(349, 170, 50, 38);
+  pen.fillStyle = '#dfb783';
+  pen.fillRect(317, 86, 5, 210);
+  pen.fillRect(117, isB ? 250 : 237, 43, 5);
+  pen.beginPath();
+  pen.arc(308, 172, 4, 0, Math.PI * 2);
+  pen.fill();
+  return surface;
+}
+
+const samples = [demo(false), demo(true)];
+
+function draw() {
+  const value = Number(el('split').value);
+  el('position').value = value + '%';
+  const pair = images.every(Boolean) ? images : samples;
+  const [a, b] = pair;
+  if (a.width !== b.width || a.height !== b.height) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    el('hint').textContent = 'These exports have different dimensions. Export them on the same aligned canvas first.';
+    return;
+  }
+  const scale = Math.min(1, 1100 / Math.max(a.width, a.height));
+  canvas.width = Math.max(1, Math.round(a.width * scale));
+  canvas.height = Math.max(1, Math.round(a.height * scale));
+  const divider = Math.round(canvas.width * value / 100);
+  ctx.drawImage(b, 0, 0, canvas.width, canvas.height);
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, 0, divider, canvas.height);
+  ctx.clip();
+  ctx.clearRect(0, 0, divider, canvas.height);
+  ctx.drawImage(a, 0, 0, canvas.width, canvas.height);
+  ctx.restore();
+  if (divider > 0 && divider < canvas.width) {
+    ctx.fillStyle = '#f8d478';
+    ctx.fillRect(divider - 1, 0, 2, canvas.height);
+  }
+}
+
+for (const [slot, id] of ['fileA','fileB'].entries()) {
+  el(id).addEventListener('change', async event => {
+    const revision = ++revisions[slot];
+    images[slot]?.close();
+    images[slot] = null;
+    const file = event.target.files[0];
+    draw();
+    if (!file) {
+      el('hint').textContent = 'Choose two still image files. The sample is shown until both are ready.';
+      return;
+    }
+    if (file.size > 30_000_000) {
+      el('hint').textContent = 'Choose a copy smaller than 30 MB to keep the comparison responsive.';
+      return;
+    }
+    try {
+      const image = await createImageBitmap(file);
+      if (revision !== revisions[slot]) { image.close(); return; }
+      images[slot] = image;
+      el('hint').textContent = images.every(Boolean)
+        ? 'Loaded both local files. Move the divider to compare.'
+        : 'Loaded one file. Choose the other image to replace the sample.';
+      draw();
+    } catch {
+      if (revision === revisions[slot]) el('hint').textContent = 'The browser could not decode this file. Try a still PNG or JPEG.';
+    }
+  });
+}
+el('split').addEventListener('input', draw);
+draw();
+</script>
+</html>
