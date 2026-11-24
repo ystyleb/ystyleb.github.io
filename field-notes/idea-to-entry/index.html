@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Separate thinking time from typing time in a word-game playtest</title>
+<style>
+body{margin:0;background:#eef2ed;color:#162820;font:1rem/1.6 system-ui,sans-serif}
+main{max-width:43rem;margin:auto;padding:2rem 1.2rem 4rem}
+h1{font-size:clamp(2rem,6vw,3.4rem);line-height:1.06;margin:.4rem 0}
+section{background:#fff;border:1px solid #567063;border-radius:.65rem;padding:1rem}
+button{font:inherit;padding:.4rem .7rem;margin:.2rem .25rem .2rem 0}
+output{display:block;min-height:1.7rem;background:#e0eee6;padding:.4rem .65rem;margin-top:.6rem}
+label{display:block;margin-top:.5rem}
+input{font:inherit;width:min(100%,24rem)}
+a{color:#315b47}
+</style>
+<main>
+<h1>Separate thinking time from typing time</h1>
+<p>When a timed open-answer game is hard on a phone, check whether players need more time to think or more time to enter an answer. Try this untimed worksheet first. It records a duration in this tab and clears the text when the round ends.</p>
+<section aria-label="Local two-part timing exercise">
+<p id="prompt">Choose Start when ready.</p>
+<button type="button" id="start">Start practice</button>
+<button type="button" id="idea" disabled>I have an answer</button>
+<form id="answer">
+<label>Practice answer <input id="text" disabled autocomplete="off"></label>
+<button id="finish" disabled>Finish entry</button>
+</form>
+<output id="result" aria-live="polite"></output>
+</section>
+<h2>Do a fair comparison</h2>
+<ol>
+<li>Use a practice prompt to learn the controls. For a real test, prepare several prompts of similar difficulty. Switch which device gets which prompt so prior exposure does not help just one device.</li>
+<li>Press “I have an answer” before typing anything. Then enter the answer at a comfortable speed. Record times per player and compare their own device pairs.</li>
+<li>When entry is slower, test the input field, keyboard activity and submit affordance before changing the game’s clock. If thinking takes longer, have the player describe their interpretation of the prompt.</li>
+</ol>
+<p>This worksheet does not judge an answer. The split includes button and focus overhead. Avoid interpreting a single pass as a timing limit or as feedback about the player’s ability.</p>
+<p>By Winson. I make <a href="https://streakdle.com/">Streakdle</a>, a timed category game. These example prompts are invented for this worksheet. The page does not receive game answers or player statistics.</p>
+</main>
+<script>
+const el=id=>document.getElementById(id);
+const prompts=["Name something that folds.","Name something that can be tied.","Name something stored in a jar."];
+let cycle=0;
+let started=null;
+let split=null;
+el("start").addEventListener("click",()=>{
+  started=performance.now();split=null;
+  el("prompt").textContent=prompts[cycle%prompts.length];
+  cycle++;
+  el("text").value="";
+  el("text").disabled=true;
+  el("finish").disabled=true;
+  el("idea").disabled=false;
+  el("result").textContent="Think of an answer.";
+  el("idea").focus();
+});
+el("idea").addEventListener("click",()=>{
+  if(started===null||split!==null) return;
+  split=performance.now();
+  el("idea").disabled=true;
+  el("text").disabled=false;
+  el("finish").disabled=false;
+  el("text").focus();
+  el("result").textContent="Type the answer you just thought of.";
+});
+el("answer").addEventListener("submit",event=>{
+  event.preventDefault();
+  if(started===null||split===null) return;
+  if(!el("text").value.trim()) {
+    el("result").textContent="Enter the practice answer, then finish.";
+    return;
+  }
+  const elapsed=performance.now();
+  const seconds = value => (value/1000).toFixed(1);
+  el("result").textContent="Thinking: "+seconds(split-started)+"s. Entry: "+seconds(elapsed-split)+"s.";
+  started=null;split=null;
+  el("text").value="";
+  el("text").disabled=true;
+  el("finish").disabled=true;
+  el("start").focus();
+});
+</script>
+</html>
