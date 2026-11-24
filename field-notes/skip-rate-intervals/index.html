@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Compare skipped answers in a timed playtest</title>
+<style>
+  body{font:1.05rem/1.6 system-ui,sans-serif;background:#f7f5ee;color:#202321;margin:0}
+  main{max-width:47rem;margin:auto;padding:2.4rem 1.2rem 4rem}
+  h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.05;margin:.5rem 0}
+  .intro{font-size:1.2rem} fieldset{border:1px solid #87918a;border-radius:.6rem;margin:1rem 0;padding:1rem;background:#fff}
+  label{display:inline-block;margin:.2rem .8rem .2rem 0} input{font:inherit;width:6rem;padding:.3rem}
+  button{font:inherit;padding:.45rem 1.05rem;background:#214e42;color:white;border:0;border-radius:.35rem}
+  output{display:block;margin:1rem 0;background:#e1eee6;border-left:.3rem solid #214e42;padding:.8rem;white-space:pre-line}
+  a{color:#185342} .credit{margin-top:2rem;border-top:1px solid #87918a;padding-top:1rem}
+</style>
+<main>
+<h1>Compare skipped answers in a timed playtest</h1>
+<p class="intro">One skipped answer in five plays and twenty skips in a hundred are both 20%. The first result leaves much more uncertainty about what another group will do.</p>
+<p>Use two independent groups with the same time limit, display and scoring rules. Count one attempt per player in each group. Define a skip before running the test. A blank response at the deadline might count as a skip; a disconnected player should be logged separately.</p>
+<form id="calculator">
+<fieldset><legend>Prompt A</legend>
+<label>Attempts <input id="totalA" type="number" required min="1" step="1" value="5"></label>
+<label>Skips <input id="skipsA" type="number" required min="0" step="1" value="1"></label>
+</fieldset>
+<fieldset><legend>Prompt B</legend>
+<label>Attempts <input id="totalB" type="number" required min="1" step="1" value="100"></label>
+<label>Skips <input id="skipsB" type="number" required min="0" step="1" value="20"></label>
+</fieldset>
+<button>Compare</button>
+</form>
+<output id="result" for="totalA skipsA totalB skipsB" aria-live="polite"></output>
+<h2>Read the two estimates</h2>
+<p>Each line shows the observed rate and a 95% Wilson interval for its own group. Treat the bounds as uncertainty around that group's estimate. Overlap alone cannot tell you whether the prompts differ, and the interval does not fix a biased recruiting sample. See the <a href="https://www.itl.nist.gov/div898/handbook/prc/section2/prc241.htm">NIST formula</a> for the calculation.</p>
+<h2>Run a follow-up</h2>
+<ol>
+<li>Ask players who skipped whether the category was unclear or whether they could not think of an answer.</li>
+<li>Change only one thing, such as replacing an ambiguous family of words with a concrete example. Run the old and new versions in the same session with randomly assigned groups.</li>
+<li>Report attempts, skips and disconnects together. With repeated attempts from the same players, summarize results per player or use a method that accounts for repeated observations.</li>
+</ol>
+<p class="credit">By Winson. I make <a href="https://streakdle.com/">Streakdle</a>, a browser game with timed category prompts. This exercise uses fictional counts and works with any playtest. It neither reads the game’s data nor reproduces its scoring.</p>
+</main>
+<script>
+  const field = id => document.getElementById(id);
+  const percent = new Intl.NumberFormat('en', {style:'percent',maximumFractionDigits:1});
+  function summarize(attempts, skips) {
+    const observed = skips / attempts;
+    const z = 1.959963984540054;
+    const z2 = z * z;
+    const divisor = 1 + z2 / attempts;
+    const center = (observed + z2 / (2 * attempts)) / divisor;
+    const half = z * Math.sqrt((observed * (1 - observed) + z2 / (4 * attempts)) / attempts) / divisor;
+    return [observed, Math.max(0, center - half), Math.min(1, center + half)].map(value => percent.format(value));
+  }
+  function render() {
+    const lines = [];
+    for (const label of ['A','B']) {
+      const attempts = field('total' + label).valueAsNumber;
+      const skips = field('skips' + label).valueAsNumber;
+      if (!Number.isSafeInteger(attempts) || !Number.isSafeInteger(skips) || attempts < 1 || skips < 0 || skips > attempts) {
+        field('result').textContent = 'Use whole counts. Skips must be between zero and attempts.';
+        return;
+      }
+      const [rate, low, high] = summarize(attempts, skips);
+      lines.push('Prompt ' + label + ' · ' + skips + '/' + attempts + ' skipped (' + rate + '), 95% Wilson interval ' + low + '–' + high + '.');
+    }
+    field('result').textContent = lines.join('\n');
+  }
+  field('calculator').addEventListener('submit', event => {event.preventDefault(); render();});
+  render();
+</script>
+</html>
