@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>A matching listening window for two takes</title>
+<style>
+  body{margin:0;background:#f5f2e8;color:#27251f;font:1rem/1.6 system-ui,sans-serif}
+  main{max-width:49rem;margin:auto;padding:2rem 1.2rem 3rem}
+  h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.08;margin:.4rem 0}
+  section{background:white;border:1px solid #a49c86;border-radius:.6rem;padding:1rem}
+  .pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,16rem),1fr));gap:.8rem}
+  label{display:block}
+  input:not([type=file]){width:7ch;font:inherit} input[type=file]{width:100%}
+  button{font:inherit;margin:.6rem .3rem 0 0;padding:.4rem .7rem}
+  audio{width:100%;margin-top:.5rem} a{color:#613319}
+</style>
+<main>
+<h1>A matching listening window for two takes</h1>
+<p>Play the same time window from two exports to hear whether a name, end rhyme or pause remains clear. The audio stays in your browser. Start with two copies of the same export if you want to try the controls first.</p>
+<section aria-label="Local audio comparison">
+<div class="pair">
+<div><label>Take A <input id="fileA" type="file" accept="audio/*,video/mp4"></label><audio id="takeA" controls preload="metadata"></audio></div>
+<div><label>Take B <input id="fileB" type="file" accept="audio/*,video/mp4"></label><audio id="takeB" controls preload="metadata"></audio></div>
+</div>
+<div class="pair">
+<label>Start in seconds <input id="start" type="number" min="0" step="0.1" value="0"></label>
+<label>End in seconds <input id="end" type="number" min="0" step="0.1" value="6"></label>
+</div>
+<button id="playA" type="button">Play A window</button><button id="playB" type="button">Play B window</button><button id="stop" type="button">Stop</button>
+<p id="status" role="status">Choose the exports and wait for their durations to load.</p>
+</section>
+<h2>Listen the same way each time</h2>
+<ol>
+<li>Choose a window that starts just before the phrase and ends one beat after it. If the takes begin at different times, trim or align them in an editor first.</li>
+<li>Set the same listening volume and use the same headphones. On pass one, write down what you heard without looking at the lyrics. On pass two, follow the lyrics and check where the two takes differ.</li>
+<li>Ask a second listener to read back the name. Record the version letter and timestamp. Keep the full take, and make changes in your source editor rather than in this browser player.</li>
+</ol>
+<p>This is an approximate browser preview. It does not trim or export audio, normalize loudness, measure intelligibility or replace a check on the device the recipient will use.</p>
+<p>By Winson. I make <a href="https://songifted.com/">Songifted</a> for personalized song gifts and <a href="https://makeitrap.com/">MakeItRap</a> for lyrics and rap videos. If a platform does not offer a downloadable preview, compare locally recorded reference drafts that you have permission to use.</p>
+</main>
+<script>
+const el = id => document.getElementById(id);
+const status = el('status');
+const takes = [el('takeA'), el('takeB')];
+const objectUrls = [null, null];
+let current = null;
+
+function stop() {
+  current = null;
+  for (const take of takes) take.pause();
+}
+
+for (const [index, suffix] of ['A','B'].entries()) {
+  const take = takes[index];
+  el('file'+suffix).addEventListener('change', event => {
+    stop();
+    const file = event.target.files[0];
+    if (objectUrls[index]) URL.revokeObjectURL(objectUrls[index]);
+    take.removeAttribute('src');
+    objectUrls[index] = file ? URL.createObjectURL(file) : null;
+    if (objectUrls[index]) take.src = objectUrls[index];
+    take.load();
+    status.textContent = file ? 'Loading take '+suffix+'…' : 'Cleared take '+suffix+'.';
+  });
+  take.addEventListener('loadedmetadata', () => {
+    status.textContent = 'Take '+suffix+' · '+take.duration.toFixed(1)+' seconds loaded.';
+  });
+  take.addEventListener('error', () => {
+    if (take.getAttribute('src')) status.textContent = 'Take '+suffix+' could not be decoded. Try WAV or MP3.';
+  });
+  take.addEventListener('play', () => takes[1-index].pause());
+  if (index === 0) el('stop').addEventListener('click', () => {stop(); status.textContent = 'Stopped.';});
+  take.addEventListener('timeupdate', () => {
+    if (current?.take === take && take.currentTime >= current.end) {
+      stop();
+      status.textContent = 'Finished '+suffix+' window.';
+    }
+  });
+  el('play'+suffix).addEventListener('click', async () => {
+    const start = el('start').valueAsNumber, end = el('end').valueAsNumber;
+    if (!Number.isFinite(take.duration) || !Number.isFinite(start) || !Number.isFinite(end) ||
+        start < 0 || start >= end || end > take.duration) {
+      status.textContent = 'Load take '+suffix+' and choose a window within its duration.';
+      return;
+    }
+    stop();
+    const run = {take,end};
+    current = run;
+    take.currentTime = start;
+    status.textContent = 'Playing '+suffix+' from '+start+' to '+end+' seconds.';
+    try { await take.play(); }
+    catch {
+      if(current === run) {
+        current = null;
+        status.textContent = 'Could not play take '+suffix+'. Try the player’s own play button.';
+      }
+    }
+  });
+}
+</script>
+</html>
