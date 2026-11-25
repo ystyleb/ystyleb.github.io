@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Measure how much your puzzle prompt gives away</title><style>
+:root{color-scheme:light;--paper:#f8f7ef;--line:#cecdbb;--ink:#192b28;--accent:#00634c}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:1rem/1.55 system-ui,sans-serif}
+main{width:min(100% - 2rem,52rem);margin:3rem auto 5rem}h1{font:700 clamp(2rem,6vw,3.5rem)/1.02 Georgia;margin-top:.25em;max-width:17ch}
+section{border:1px solid var(--line);padding:1.2rem;border-radius:.8rem;background:white;margin:1.5rem 0}a{color:var(--accent)}label{display:block;margin-block:.7rem}
+input,select,textarea,button{font:inherit;max-width:100%}input[type=range]{width:min(100%,20rem);display:block}output{display:block;color:var(--accent);font-weight:700;margin-top:1rem}
+textarea{width:100%;min-height:8rem}canvas{display:block;max-width:100%;height:auto;background:#163843}
+fieldset{min-width:0}button{padding:.35rem .7rem;border:1px solid var(--accent);background:#eaf4ef;border-radius:.3rem;color:var(--ink)}li+li{margin-top:.35rem}
+</style></head><body><main><p>Field notes by Winson</p><h1>Measure how much your puzzle prompt gives away</h1><p>A moderator can inadvertently coach a player by naming the topic in the introduction. Compare two small groups on the same opening puzzle. Give one group a short, neutral prompt and the other the planned introduction. Use each participant’s first exposure.</p>
+<section><fieldset><legend>Independent first-time testers</legend>
+<label>Neutral prompt: solved without extra help <input id="neutral" type="number" min="0" value="2"> out of <input aria-label="Neutral prompt tester total" id="neutralTotal" type="number" min="1" value="5"></label>
+<label>Planned intro: solved without extra help <input id="intro" type="number" min="0" value="4"> out of <input aria-label="Planned intro tester total" id="introTotal" type="number" min="1" value="5"></label>
+</fieldset><output id="result" aria-live="polite"></output></section>
+<h2>Keep the groups comparable</h2><ol><li>Use the same opening puzzle, device type and limit for both groups. If a site serves different questions, record the visible round and use the worksheet only for matched prompts.</li><li>Write exact wording and count a success only if completed before the moderator says anything beyond the prompt.</li><li>Capture what the player thought the rules were. A different solve rate can reflect clearer rules, an accidental hint or simple sampling variation. Read the notes before changing the copy.</li></ol>
+<p>The counts shown are fictional. With small groups, report raw counts alongside percentages and treat the difference as a signal to investigate.</p><h2>Practice examples</h2><p>I run the tools linked in this section. You can use your own samples for every exercise above.</p><ul><li><a href="https://streakdle.com/">Streakdle</a> — Try a short browser puzzle session and record the input device and the moment instruction was needed.</li></ul></main><script>const fields = ['neutral','neutralTotal','intro','introTotal'].map(id => document.getElementById(id));
+const result = document.getElementById('result');
+function refresh() {
+  const [n, nt, i, it] = fields.map(field => field.valueAsNumber);
+  if (fields.some(field => !field.value || !field.validity.valid) || n > nt || i > it) {
+    result.textContent = 'Enter whole counts. Each solved count must be within its group total.'; return;
+  }
+  const gap = 100 * (i/it - n/nt);
+  result.textContent = 'Neutral: ' + n + '/' + nt + '. Planned: ' + i + '/' + it + '. Planned minus neutral: ' + (gap > 0 ? '+' : '') + gap.toFixed(1) + ' percentage points.';
+}
+for (const field of fields) field.addEventListener('input',refresh);
+refresh();</script></body></html>

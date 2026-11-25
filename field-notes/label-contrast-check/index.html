@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Check whether a label reads before you export</title><style>
+:root{color-scheme:light;--paper:#f8f7ef;--line:#cecdbb;--ink:#192b28;--accent:#00634c}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:1rem/1.55 system-ui,sans-serif}
+main{width:min(100% - 2rem,52rem);margin:3rem auto 5rem}h1{font:700 clamp(2rem,6vw,3.5rem)/1.02 Georgia;margin-top:.25em;max-width:17ch}
+section{border:1px solid var(--line);padding:1.2rem;border-radius:.8rem;background:white;margin:1.5rem 0}a{color:var(--accent)}label{display:block;margin-block:.7rem}
+input,select,textarea,button{font:inherit;max-width:100%}input[type=range]{width:min(100%,20rem);display:block}output{display:block;color:var(--accent);font-weight:700;margin-top:1rem}
+textarea{width:100%;min-height:8rem}canvas{display:block;max-width:100%;height:auto;background:#163843}
+fieldset{min-width:0}button{padding:.35rem .7rem;border:1px solid var(--accent);background:#eaf4ef;border-radius:.3rem;color:var(--ink)}li+li{margin-top:.35rem}
+</style></head><body><main><p>Field notes by Winson</p><h1>Check whether a label reads before you export</h1><p>Compare two flat colors before committing to a caption, watermark, panel label or small interface badge. Start with a text color and a background color, then preview the combination as a caption and a larger label.</p>
+<section><label>Text color <input type="color" id="fg" value="#202835"></label>
+<label>Background color <input type="color" id="bg" value="#f0c276"></label>
+<div id="demo" style="padding:1em;border:1px solid #48534c"><small>Detail enlarged for review</small><br><b style="font-size:1.7em">Variant A</b></div>
+<output id="result" aria-live="polite"></output></section>
+<h2>Check the most difficult spot</h2><ol><li>Pick two colors from a representative export. Choose the least clear area behind the label if the background is a photo.</li><li>Try a solid backing when the underlying image changes across crops or panels. Recheck the actual export after compression.</li><li>Confirm the label at its smallest intended size. Use position or text alongside color to indicate priority or state.</li></ol>
+<p>The calculator compares opaque, flat sRGB colors. Its contrast ratio does not account for transparency, image textures, resizing, font rendering or viewer conditions. See the <a href="https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html">W3C contrast guidance</a> for interpretation.</p><h2>Practice examples</h2><p>I run the tools linked in this section. You can use your own samples for every exercise above.</p><ul><li><a href="https://emoteresize.com/">Emote Resizer</a> — Make an emote export and check whether the face still reads in a square crop.</li><li><a href="https://tryonswap.com/">TryOnSwap</a> — Choose a garment preview and protect the area that shows the garment’s edge or fasteners.</li><li><a href="https://pawmotif.com/">PawMotif</a> — Use a pet portrait and check whether both eyes and the ear tips still fit.</li><li><a href="https://freeimagemerger.com/">Free Image Merger</a> — Make a comparison panel and keep its most important seam or label in view.</li></ul></main><script>const fg = document.getElementById('fg'), bg = document.getElementById('bg');
+const demo = document.getElementById('demo'), result = document.getElementById('result');
+function luminance(hex) {
+  const rgb = [1,3,5].map(i => parseInt(hex.slice(i,i+2),16)/255);
+  const linear = rgb.map(n => n <= 0.04045 ? n/12.92 : ((n+0.055)/1.055)**2.4);
+  return linear[0]*0.2126+linear[1]*0.7152+linear[2]*0.0722;
+}
+function show() {
+  const values = [luminance(fg.value),luminance(bg.value)].sort((a,b)=>b-a);
+  demo.style.color = fg.value; demo.style.backgroundColor = bg.value;
+  result.textContent = 'Contrast ratio: ' + ((values[0]+0.05)/(values[1]+0.05)).toFixed(2) + ':1';
+}
+fg.addEventListener('input',show); bg.addEventListener('input',show); show();</script></body></html>

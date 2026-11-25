@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How much time does a lyric phrase leave for a breath?</title><style>
+:root{color-scheme:light;--paper:#f8f7ef;--line:#cecdbb;--ink:#192b28;--accent:#00634c}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:1rem/1.55 system-ui,sans-serif}
+main{width:min(100% - 2rem,52rem);margin:3rem auto 5rem}h1{font:700 clamp(2rem,6vw,3.5rem)/1.02 Georgia;margin-top:.25em;max-width:17ch}
+section{border:1px solid var(--line);padding:1.2rem;border-radius:.8rem;background:white;margin:1.5rem 0}a{color:var(--accent)}label{display:block;margin-block:.7rem}
+input,select,textarea,button{font:inherit;max-width:100%}input[type=range]{width:min(100%,20rem);display:block}output{display:block;color:var(--accent);font-weight:700;margin-top:1rem}
+textarea{width:100%;min-height:8rem}canvas{display:block;max-width:100%;height:auto;background:#163843}
+fieldset{min-width:0}button{padding:.35rem .7rem;border:1px solid var(--accent);background:#eaf4ef;border-radius:.3rem;color:var(--ink)}li+li{margin-top:.35rem}
+</style></head><body><main><p>Field notes by Winson</p><h1>How much time does a lyric phrase leave for a breath?</h1><p>Use a phone recording and this worksheet to estimate room for breathing between two phrases at a fixed tempo. This example assumes four beats per bar and a steady tempo.</p>
+<section><label>Tempo in beats per minute <input id="bpm" type="number" min="40" max="240" value="100"></label>
+<label>Bars available <input id="bars" type="number" min="1" max="16" value="2"></label>
+<label>Measured phrase duration in seconds <input id="phrase" type="number" min="0" max="96" step="0.1" value="4.2"></label>
+<output id="result" aria-live="polite"></output></section>
+<h2>Try it aloud</h2><ol><li>Tap the music at the intended tempo. Read or sing the phrase three times and use the middle duration to avoid tuning for your quickest take.</li><li>When the phrase leaves little time, shorten the preceding words or divide at a place the listener can hear as a complete idea.</li><li>Repeat with one slower take. Listen for names and final consonants, especially if they land against a drum hit or a chord change.</li></ol>
+<p>At 100 BPM two bars last 4.80 seconds. A 4.20-second phrase leaves 0.60 seconds. Use that as a working estimate and check the phrasing in the actual take.</p><h2>Practice examples</h2><p>I run the tools linked in this section. You can use your own samples for every exercise above.</p><ul><li><a href="https://songifted.com/">Songifted</a> — Use a personal song verse as the sample and mark where the recipient’s name needs room.</li><li><a href="https://makeitrap.com/">MakeItRap</a> — Use a rap verse as the sample and mark the first and last words of a fast phrase.</li></ul></main><script>const fields = ['bpm','bars','phrase'].map(id => document.getElementById(id));
+const result = document.getElementById('result');
+function refresh() {
+  if (fields.some(field => !field.value || !field.validity.valid)) {
+    result.textContent = 'Use a tempo from 40 to 240, 1–16 bars, and a valid duration.'; return;
+  }
+  const [bpm, bars, phrase] = fields.map(field => field.valueAsNumber);
+  const span = bars * 4 * 60 / bpm, room = span - phrase;
+  result.textContent = span.toFixed(2) + ' s in the window. ' + (room < 0 ? Math.abs(room).toFixed(2) + ' s over the window.' : room.toFixed(2) + ' s left.');
+}
+for (const field of fields) field.addEventListener('input',refresh);
+refresh();</script></body></html>
