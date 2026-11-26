@@ -1,0 +1,20 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>See what resampling does to very small artwork</title><style>*{box-sizing:border-box}body{font:1rem/1.55 system-ui;margin:0;background:#fbf7ef;color:#212c3d}main{width:min(47rem,calc(100% - 2rem));margin:2rem auto 5rem}h1{font:750 clamp(2rem,6vw,3.6rem)/1.08 Georgia;max-width:20ch}h2{font-size:1.25rem}a{color:#124f78}section{border:1px solid #becbd4;background:white;padding:1.2rem;border-radius:.6rem;margin:1.4rem 0}label{display:block;margin:.7rem 0}button,input,textarea,select{font:inherit;max-width:100%}button{background:#e4f0f7;border:1px solid #4c7286;border-radius:.25rem;padding:.35rem .7rem;color:#172e3d}textarea{width:100%;min-height:6rem}output{display:block;white-space:pre-line;color:#204d60;font-weight:650;margin-top:1rem}canvas{display:block;max-width:100%;height:auto}table{border-collapse:collapse;width:100%}th,td{text-align:left;border-bottom:1px solid #c7d5de;padding:.5em}li+li{margin-top:.35em}</style><main><p>Winson · Field notes</p><h1>See what resampling does to very small artwork</h1><p>Resize the same drawn mark twice. This tool shows a nearest-neighbor sample and a smoothed sample, enlarged so you can compare the pixel edges. The check uses an original test mark generated in your browser.</p>
+<section><label>Output size in pixels <input id="size" type="range" min="8" max="48" value="16"></label><canvas id="preview" width="480" height="230" aria-label="Two enlarged preview panels, nearest neighbor on the left and smoothing on the right"></canvas><output id="notes" aria-live="polite"></output></section>
+<h2>Use the comparison when exporting</h2><ol><li>Check both results at the actual destination size before inspecting the enlarged pixels.</li><li>For pixel art, inspect uneven line thickness after shrinking. For illustrated edges, look for lost fine details and test over light and dark backgrounds.</li><li>In a comparison panel, re-export from the original size if a tiny raster tile has already lost the texture you want to inspect.</li></ol>
+<p>This is a browser exercise. Browser smoothing details can differ, and repeated resizing, compression or transparency processing may change a real export.</p><h2>Example material</h2><p>I run the linked products. Use examples you own or have permission to share.</p><ul><li><a href="https://emoteresize.com/">Emote Resizer</a> — Choose a size-specific emote export as a thumbnail example.</li><li><a href="https://tryonswap.com/">TryOnSwap</a> — Use an authorized apparel preview as a visual reference, and retain the original garment image.</li><li><a href="https://pawmotif.com/">PawMotif</a> — Take a pet portrait or illustration as a reference and preserve its approved crop.</li><li><a href="https://freeimagemerger.com/">Free Image Merger</a> — Use a composite image in which different details need to remain readable.</li></ul></main><script>const target=document.getElementById('preview').getContext('2d');
+const size=document.getElementById('size');
+const source=document.createElement('canvas');source.width=source.height=96;
+const ctx=source.getContext('2d');ctx.fillStyle='#edaa49';ctx.beginPath();ctx.arc(48,48,34,0,2*Math.PI);ctx.fill();
+ctx.strokeStyle='#274c65';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(24,60);ctx.quadraticCurveTo(47,19,73,47);ctx.stroke();
+ctx.fillStyle='#f9ede0';ctx.fillRect(42,55,19,4);
+function show(){
+ const n=Number(size.value);
+ target.fillStyle='#e7e6dd';target.fillRect(0,0,480,230);
+ for(const [index,smooth] of [false,true].entries()){
+   const small=document.createElement('canvas');small.width=small.height=n;
+   const c=small.getContext('2d');c.imageSmoothingEnabled=smooth;c.drawImage(source,0,0,n,n);
+   target.imageSmoothingEnabled=false;target.drawImage(small,18+index*240,25,190,190);
+ }
+ document.getElementById('notes').textContent=n+' × '+n+' native pixels per sample. Left: nearest neighbor. Right: smoothing.';
+}
+size.addEventListener('input',show);show();</script></html>
