@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compare a JPEG export with its source pixels</title>
+<style>body{margin:auto;padding:2rem 1rem;max-width:58rem;font:17px/1.55 system-ui;color:#182821;background:#faf9f5}h1{font:clamp(2rem,5vw,3.1rem)/1.08 Georgia,serif;max-width:17em}label{display:block;margin:.8rem 0}canvas{display:block;width:100%;height:auto;image-rendering:pixelated;background:#fff}section{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem}figure{margin:0}figcaption,small{font-size:.86rem}output{display:block;margin:1rem 0;font-weight:600}a{color:#165945}footer{border-top:1px solid #aaa;margin-top:2rem}</style>
+<main><h1>Compare a JPEG export with its source pixels</h1>
+<p>A JPEG can look fine at a glance and still blur a thin line or tint a neutral edge. Use the built-in test chart or choose a picture. The two images and the error map use exactly the same grid.</p>
+<label>Choose a local picture <input id="upload" type="file" accept="image/png,image/jpeg,image/webp"></label>
+<label>JPEG quality <input type="range" id="quality" min="5" max="100" value="65"> <span id="percent">65%</span></label>
+<button id="sample" type="button">Restore test chart</button>
+<output aria-live="polite" id="results">Preparing the test chart…</output>
+<section><figure><canvas id="original" width="240" height="144"></canvas><figcaption>Reference on white</figcaption></figure>
+<figure><canvas id="encoded" width="240" height="144"></canvas><figcaption>Decoded JPEG</figcaption></figure>
+<figure><canvas id="error" width="240" height="144"></canvas><figcaption>Absolute channel error, amplified 4×</figcaption></figure></section>
+<h2>Read the difference</h2><p>Black on the error map means the decoded pixel matches its reference. A red mark means the red channel changed, in either direction. Mean error summarizes the whole image. Peak error can come from just one pixel. Drag the slider and watch both values alongside the encoded byte count.</p>
+<p>The comparison fits the image within 768 × 768 pixels and flattens transparency onto white before encoding. Numbers describe this preview, at the displayed dimensions. For an existing JPEG the reference is its decoded image, so the result measures one additional encoding pass. Processing stays in this browser.</p>
+<footer><p>Made by Winson. I use this check when preparing small graphics for <a href="https://emoteresize.com/">Emote Resizer</a> or a comparison sheet for <a href="https://freeimagemerger.com/">Free Image Merger</a>. For photographic material I look at garment seams before a <a href="https://tryonswap.com/">TryOnSwap</a> preview and at whiskers before a <a href="https://pawmotif.com/">PawMotif</a> portrait. I make all four products.</p></footer></main>
+<script>
+const el=id=>document.getElementById(id);
+const src=el('original'),dst=el('encoded'),heat=el('error');
+let generation=0,selection=0;
+function compare(reference,decoded){
+  if(reference.length!==decoded.length || reference.length%4!==0) throw Error('Image dimensions differ');
+  const map=new Uint8ClampedArray(reference.length);
+  let sum=0,peak=0;
+  for(let i=0;i<reference.length;i+=4){
+    for(let ch=0;ch<3;ch++){
+      const delta=Math.abs(reference[i+ch]-decoded[i+ch]);
+      sum+=delta;peak=Math.max(peak,delta);map[i+ch]=Math.min(255,delta*4);
+    }
+    map[i+3]=255;
+  }
+  return {map,mean:reference.length?sum/(reference.length/4*3):0,peak};
+}
+function chart(){
+  selection++;el('upload').value='';src.width=240;src.height=144;
+  const c=src.getContext('2d');const ramp=c.createLinearGradient(0,0,240,0);
+  ramp.addColorStop(0,'#102c5c');ramp.addColorStop(1,'#ffcf89');
+  c.fillStyle=ramp;c.fillRect(0,0,240,144);
+  for(let i=0;i<64;i++){c.fillStyle=i%2?'#134b7a':'#fa573a';c.fillRect(12+i*2,12,2,60)}
+  c.fillStyle='white';c.fillRect(16,100,208,2);c.font='16px sans-serif';c.fillText('seam / whisker / edge',16,126);render();
+}
+async function render(){
+  const id=++generation,w=src.width,h=src.height,level=Number(el('quality').value);
+  el('percent').textContent=level+'%';
+  try{
+    const ref=src.getContext('2d').getImageData(0,0,w,h).data;
+    const blob=await new Promise(done=>src.toBlob(done,'image/jpeg',level/100));
+    if(!blob||blob.type!=='image/jpeg')throw Error('JPEG encoding unavailable');
+    const bmp=await createImageBitmap(blob);
+    if(id!==generation){bmp.close();return}
+    dst.width=heat.width=w;dst.height=heat.height=h;
+    const dc=dst.getContext('2d');dc.drawImage(bmp,0,0);bmp.close();
+    const calc=compare(ref,dc.getImageData(0,0,w,h).data);
+    heat.getContext('2d').putImageData(new ImageData(calc.map,w,h),0,0);
+    el('results').textContent=w+' × '+h+' px · '+blob.size.toLocaleString()+' JPEG bytes · mean channel error '+calc.mean.toFixed(2)+' / 255 · peak '+calc.peak+' / 255';
+  }catch(e){if(id===generation)el('results').textContent='Unable to compare this image in this browser.'}
+}
+el('upload').addEventListener('change',async e=>{
+  const file=e.target.files[0];if(!file)return;const id=++selection;
+  try{
+    const bmp=await createImageBitmap(file);
+    if(id!==selection){bmp.close();return}
+    const ratio=Math.min(1,768/Math.max(bmp.width,bmp.height));
+    src.width=Math.max(1,Math.round(bmp.width*ratio));src.height=Math.max(1,Math.round(bmp.height*ratio));
+    const c=src.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,src.width,src.height);c.drawImage(bmp,0,0,src.width,src.height);bmp.close();render();
+  }catch(e){if(id===selection)el('results').textContent='The file could not be decoded. Choose a PNG, JPEG or WebP image.'}
+});
+el('quality').addEventListener('input',render);el('sample').addEventListener('click',chart);chart();
+</script></html>
